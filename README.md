@@ -1,6 +1,6 @@
 ## Simple viral annotator
 
-This simple script aligns viral sequences to a reference genome that is fetched from genbank and lifts the annotation from the reference to the query.
+This simple script aligns viral sequences to a reference genome that is fetched from genbank and lifts the annotation from the reference to the query. This is only expected to work for sequences that are very similar to the reference sequence.
 
 Usage:
 ```

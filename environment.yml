@@ -1,0 +1,9 @@
+name: simple-annotator
+channels:
+- conda-forge
+- bioconda
+- defaults
+dependencies:
+- biopython
+- mafft
+- bcbio-gff
