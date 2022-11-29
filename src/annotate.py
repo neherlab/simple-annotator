@@ -9,17 +9,18 @@ from defaults import reference_sequences
 def parse_args():
     import argparse
     parser = argparse.ArgumentParser(description='Annotate sequences using a genbank reference')
-    parser.add_argument('--reference', help='Genbank reference file')
-    parser.add_argument('--virus', help='Virus name')
-    parser.add_argument('--sequences', help='Fasta file of sequences to annotate')
+    parser.add_argument('--reference', help='Genbank accession of reference sequence (will be fetched from genbank)')
+    parser.add_argument('--virus', help='Virus name, default reference for the virus will be fetched from genbank')
+    parser.add_argument('--sequences', required=True, help='Fasta file of sequences to annotate')
     parser.add_argument('--output-format', choices=['genbank', 'gff3', 'tbl'], default='genbank', type=str, help='Output format')
-    parser.add_argument('--output-dir', default='.', type=str, help='Output directory')
+    parser.add_argument('--output-dir', required=True, type=str, help='Output directory')
     return parser.parse_args()
 
 def get_reference_sequence(accession):
     from Bio import Entrez
     Entrez.email = "hello@nextstrain.org"
     handle = Entrez.efetch(db="nucleotide", id=accession, rettype="gb", retmode="text")
+    print(f"Fetching reference sequence {accession} from genbank")
     return SeqIO.read(handle, "genbank")
 
 def get_coordinate_map(reference, record):
@@ -109,6 +110,14 @@ if __name__=="__main__":
         print("Output directory does not exist!")
         exit()
 
+    if args.virus is None and args.reference is None:
+        print("Please specify a reference sequence accession or a virus name.")
+        exit()
+
+    if args.virus is not None and args.virus not in reference_sequences:
+        print("Virus name not found in reference sequences.")
+        exit()
+
     ref_id = reference_sequences[args.virus] if args.virus else args.reference
 
     reference_sequence = get_reference_sequence(ref_id)
@@ -117,6 +126,7 @@ if __name__=="__main__":
 
     for record in SeqIO.parse(args.sequences, "fasta"):
         annotated_sequences.append(annotate_sequence(reference_sequence, record))
+        print(f"Annotated {record.id}")
         if args.output_format == 'genbank':
             SeqIO.write(record, f"{args.output_dir}/{record.id}.gb", "genbank")
         elif args.output_format == 'gff3':
