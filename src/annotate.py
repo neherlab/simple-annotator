@@ -90,7 +90,7 @@ def annotate_sequence(reference, record):
     return record
 
 def tbl_entry(start, end, key, qualifiers):
-    return f"{start}\t{end}\t{key}\t\t\n" + "\n".join([f"\t\t\t{q[0]}\t{q[1]}" for q in qualifiers]) + "\n"
+    return f"{start+1}\t{end}\t{key}\t\t\n" + "\n".join([f"\t\t\t{q[0]}\t{q[1]}" for q in qualifiers]) + "\n"
 
 def feature_to_tbl(feat):
     if feat.type == 'source':
