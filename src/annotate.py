@@ -31,20 +31,27 @@ def get_coordinate_map(reference, record):
         os.system(f"mafft --quiet {tmp_dir}/sequences.fasta > {tmp_dir}/aligned.fasta")
         ref_aligned, qry_aligned = AlignIO.read(f"{tmp_dir}/aligned.fasta", "fasta")
 
+    aln_to_ref = np.cumsum(np.array(ref_aligned.seq) !='-')
     aln_to_qry = np.cumsum(np.array(qry_aligned.seq) !='-')
+
     ref_to_qry = aln_to_qry[np.array(ref_aligned.seq) !='-'] - 1
+    qry_to_ref = aln_to_ref[np.array(qry_aligned.seq) !='-'] - 1
 
     positions_mapping_to_end_of_query = np.where(ref_to_qry == len(record.seq)-1)[0]
     if len(positions_mapping_to_end_of_query) > 1:
         ref_to_qry[positions_mapping_to_end_of_query[1]:] = len(record.seq)
 
-    return ref_to_qry
+    positions_mapping_to_end_of_ref = np.where(qry_to_ref == len(reference.seq)-1)[0]
+    if len(positions_mapping_to_end_of_ref) > 1:
+        qry_to_ref[positions_mapping_to_end_of_ref[1]:] = len(reference.seq)
+
+    return ref_to_qry, qry_to_ref
 
 
 def annotate_sequence(reference, record):
     from Bio import SeqFeature
 
-    coordinate_map = get_coordinate_map(reference, record)
+    ref_to_qry, qry_to_ref = get_coordinate_map(reference, record)
 
     new_features = []
     # annotate features
@@ -58,22 +65,24 @@ def annotate_sequence(reference, record):
                     new_feat.qualifiers[v] = feature.qualifiers[v]
         else:
             new_feat.location = SeqFeature.FeatureLocation(
-                    max(0,int(coordinate_map[feature.location.start])),
-                    min(int(coordinate_map[feature.location.end-1]+1), len(record.seq)))
+                    max(0,int(ref_to_qry[feature.location.start])),
+                    min(int(ref_to_qry[feature.location.end-1]+1), len(record.seq)))
 
-            # if coordinate_map[feature.location.start]==-1:
-            #     continue
-            # if coordinate_map[feature.location.end]==len(record.seq):
-            #     continue
+            if new_feat.location.end - new_feat.location.start < 0.3*(feature.location.end - feature.location.start):
+                continue
 
             if new_feat.type == 'CDS':
-                new_feat.qualifiers['translation'] = str(new_feat.extract(record.seq).translate())
+                # check of CDS starts before the beginning of the sequence
+                if ref_to_qry[feature.location.start]==-1:
+                    frame=(feature.location.start-qry_to_ref[new_feat.location.start]) % 3
+                    new_feat.qualifiers['codon_start'][0] = f"{int(feature.qualifiers['codon_start'][0]) + frame}"
+                    print(frame, new_feat.qualifiers['codon_start'] , feature.qualifiers['codon_start'])
+                new_feat.qualifiers['translation'] = new_feat.translate(record.seq, cds=False)
 
             if 'locus_tag' in new_feat.qualifiers:
                 new_feat.qualifiers.pop('locus_tag')
 
-        if new_feat.location.end - new_feat.location.start > 0.3*(feature.location.end - feature.location.start):
-            new_features.append(new_feat)
+        new_features.append(new_feat)
 
     record.features = new_features
     record.annotations = {k:v for k,v in reference.annotations.items() if k in ['organism', 'taxonomy', 'molecule_type']}
