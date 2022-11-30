@@ -45,7 +45,18 @@ def get_coordinate_map(reference, record):
     if len(positions_mapping_to_end_of_ref) > 1:
         qry_to_ref[positions_mapping_to_end_of_ref[1]:] = len(reference.seq)
 
-    return ref_to_qry, qry_to_ref
+    return np.concatenate([ref_to_qry, [min(ref_to_qry[-1]+1, len(record.seq))]]), np.concatenate([qry_to_ref, [min(qry_to_ref[-1]+1, len(reference.seq))]])
+
+
+def lift_location(location, ref_to_qry, query):
+    # check if the feature is entirely outside of the query sequence
+    if ref_to_qry[location.start]==ref_to_qry[location.end]:
+        return None
+
+    from Bio import SeqFeature
+    return SeqFeature.FeatureLocation(
+            max(0,int(ref_to_qry[location.start])),
+            min(int(ref_to_qry[location.end-1]+1), len(query.seq)))
 
 
 def annotate_sequence(reference, record):
@@ -64,19 +75,38 @@ def annotate_sequence(reference, record):
                 if v in feature.qualifiers:
                     new_feat.qualifiers[v] = feature.qualifiers[v]
         else:
-            new_feat.location = SeqFeature.FeatureLocation(
-                    max(0,int(ref_to_qry[feature.location.start])),
-                    min(int(ref_to_qry[feature.location.end-1]+1), len(record.seq)))
+            # for compound locations, loop over parts
+            if isinstance(feature.location, SeqFeature.CompoundLocation):
+                parts = []
+                for loc in feature.location.parts:
+                    new_loc = lift_location(loc, ref_to_qry, record)
+                    if new_loc:
+                        parts.append(new_loc)
+                if len(parts) > 0:
+                    new_feat.location = SeqFeature.CompoundLocation(parts)
+                elif len(parts) == 1:
+                    new_feat.location = parts[0]
+                else: # continue on empty feature
+                    continue
+            else:
+                new_loc = lift_location(feature.location, ref_to_qry, record)
+                if new_loc:
+                    new_feat.location = new_loc
+                else: # continue on empty feature
+                    continue
 
-            if new_feat.location.end - new_feat.location.start < 0.3*(feature.location.end - feature.location.start):
-                continue
+            # exclude short features less that 10 amino acids long that often correspond to alignment problems
+            if new_feat.type in  ['CDS', 'gene']:
+                if (new_feat.location.end - new_feat.location.start < 30) and (feature.location.end - feature.location.start > 30):
+                    print("Skipping feature", new_feat.qualifiers['gene'], "because it is too short, old location", feature.location, "new location", new_feat.location)
+                    continue
 
             if new_feat.type == 'CDS':
                 # check of CDS starts before the beginning of the sequence
                 if ref_to_qry[feature.location.start]==-1:
                     frame=(feature.location.start-qry_to_ref[new_feat.location.start]) % 3
                     new_feat.qualifiers['codon_start'][0] = f"{int(feature.qualifiers['codon_start'][0]) + frame}"
-                    print(frame, new_feat.qualifiers['codon_start'] , feature.qualifiers['codon_start'])
+
                 new_feat.qualifiers['translation'] = new_feat.translate(record.seq, cds=False)
 
             if 'locus_tag' in new_feat.qualifiers:
@@ -136,13 +166,14 @@ if __name__=="__main__":
     for record in SeqIO.parse(args.sequences, "fasta"):
         annotated_sequences.append(annotate_sequence(reference_sequence, record))
         print(f"Annotated {record.id}")
+        file_base_name = record.id.replace('/', '_')
         if args.output_format == 'genbank':
-            SeqIO.write(record, f"{args.output_dir}/{record.id}.gb", "genbank")
+            SeqIO.write(record, f"{args.output_dir}/{file_base_name}.gb", "genbank")
         elif args.output_format == 'gff3':
             from BCBio.GFF import GFF3Writer
             gffwriter = GFF3Writer()
-            with open(f"{args.output_dir}/{record.id}.gff3", "w") as handle:
+            with open(f"{args.output_dir}/{file_base_name}.gff3", "w") as handle:
                 gffwriter.write([record], handle)
         elif args.output_format == 'tbl':
-            write_tbl(record, f"{args.output_dir}/{record.id}.tbl")
+            write_tbl(record, f"{args.output_dir}/{file_base_name}.tbl")
 
