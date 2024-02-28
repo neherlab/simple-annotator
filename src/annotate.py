@@ -128,8 +128,8 @@ def feature_to_tbl(feat):
                          [('mol_type', feat.qualifiers['mol_type'][0])])
     elif feat.type == 'CDS':
         return tbl_entry(feat.location.start, feat.location.end, 'CDS',
-                        [('product', feat.qualifiers['product'][0]),
-                         ('protein_id', feat.qualifiers['protein_id'][0])])
+                        [('product', feat.qualifiers['product'][0])])
+#                         ('protein_id', feat.qualifiers['protein_id'][0])])
     elif feat.type == 'gene':
         return tbl_entry(feat.location.start, feat.location.end, 'gene',
                         [('gene', feat.qualifiers['gene'][0])])
