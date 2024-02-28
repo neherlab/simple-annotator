@@ -19,7 +19,13 @@ The workflow will
  - annotated the genome
  - assembles the submission files using `table2asn`
 
- 
+The workflow is run via
+```
+snakemake -c4
+```
+The steps below are not necessary for running the Snakemake workflow. 
+
+
 
 ## Create metadata
 Metadata can be provided as a tab separated file with file ending `.src`.
