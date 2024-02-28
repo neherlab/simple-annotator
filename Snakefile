@@ -1,7 +1,10 @@
+# After running the workflow, the submission files will be in the `rsv/a` and `rsv/b` directories
+
 input_data = "data/sequences.fasta"
 template_file = "ncbi_author_template.sbt"
 pathogens = ['rsv/a', 'rsv/b']
 platform = 'linux64'  # or 'mac'
+
 
 rule all:
     input:

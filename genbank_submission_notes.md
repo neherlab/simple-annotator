@@ -24,7 +24,8 @@ The workflow is run via
 snakemake -c4
 ```
 The steps below are not necessary for running the Snakemake workflow. 
-
+After running the workflow, files required for submission should in the directories
+`rsv/a` and `rsv/b`.
 
 
 ## Create metadata
