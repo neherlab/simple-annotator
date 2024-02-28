@@ -85,9 +85,9 @@ rule assemble_submission:
         prefix = lambda w: w.pathogen.split('/')[-1]
     shell:
         '''
-        ./table2asn -indir {params.indir} -t {input.template}  -M n -Z -split-dr || true
+        ./table2asn -indir {params.indir} -t {input.template}   -a s -V v -c f || true
         mkdir -p {wildcards.pathogen}
-        mv {params.indir}/submission.* {wildcards.pathogen}/
+        cp {params.indir}/submission.* {wildcards.pathogen}/
         mv {params.prefix}.stats {wildcards.pathogen}/submission.stats
         '''
 
