@@ -140,6 +140,8 @@ def write_tbl(record, filename):
     with open(filename, 'w') as f:
         f.write(f">Feature {record.id}\n")
         for feat in record.features:
+            if feat.type == 'source':
+                continue
             f.write(feature_to_tbl(feat))
 
 if __name__=="__main__":

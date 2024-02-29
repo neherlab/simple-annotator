@@ -25,7 +25,7 @@ if __name__ == "__main__":
         division = isolate_details[3].split("-")[0]
         seq_id = isolate_details[3]
         metadata.append({"Sequence_ID":seq_id, "isolate": isolate, "note": accession, "collection-date": collection_date, 
-                         "country": f"{country}: {division}","organism": args.organism})
+                         "country": f"{country}: {division}","organism": args.organism, "mol_type": "viral cRNA"})
 
 
         seq.id = seq_id

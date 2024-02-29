@@ -1,6 +1,6 @@
 # After running the workflow, the submission files will be in the `rsv/a` and `rsv/b` directories
 
-input_data = "data/sequences.fasta"
+input_data = "data/dummy_data.fasta"
 template_file = "ncbi_author_template.sbt"
 pathogens = ['rsv/a', 'rsv/b']
 platform = 'linux64'  # or 'mac'
@@ -85,7 +85,7 @@ rule assemble_submission:
         prefix = lambda w: w.pathogen.split('/')[-1]
     shell:
         '''
-        ./table2asn -indir {params.indir} -t {input.template}   -a s -V v -c f || true
+        ./table2asn -indir {params.indir} -t {input.template}   -a s -V v -c f -Z -split-dr || true
         mkdir -p {wildcards.pathogen}
         cp {params.indir}/submission.* {wildcards.pathogen}/
         mv {params.prefix}.stats {wildcards.pathogen}/submission.stats
