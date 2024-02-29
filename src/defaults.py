@@ -1,6 +1,6 @@
 
 
 reference_sequences = {
-    "rsv-a": "LR699737.1",
+    "rsv-a": "ON237273.1",
     "rsv-b": "MW020595.1",
 }
